@@ -19,7 +19,9 @@ export function createWorkspace() {
     playing: playback.state.playing,
   });
   function enterPerson(id: string) {
-    branch.enter(id, position());
+    // `branch.enter` keeps the first return point while interviews are
+    // chained, so an unknown id must not suspend playback on its own.
+    if (!branch.enter(id, position())) return;
     playback.state.playing = false;
     discovery.close();
   }
@@ -48,7 +50,9 @@ export function createWorkspace() {
         break;
       }
       case "revisit":
-        branch.leave();
+        // A journal revisit explicitly abandons any interview in progress and
+        // must not resume an older, invisible return point later.
+        branch.dismiss();
         playback.select(command.entry.chapterId);
         playback.seek(command.entry.time);
         camera.restore(command.entry.camera);
